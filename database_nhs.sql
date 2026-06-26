@@ -93,3 +93,33 @@ CREATE TABLE Appointments (
     CONSTRAINT chk_appointment_time CHECK (HOUR(AppointmentTime) >= 8 AND HOUR(AppointmentTime) < 20)
 );
 
+--- Add constraints to ensure valid date of birth for patients
+ALTER TABLE Patients
+ADD CONSTRAINT chk_patient_datebirth
+CHECK (
+    YEAR(DateBirth) > 1920
+    AND MONTH(DateBirth) BETWEEN 1 AND 12
+    AND (
+        (MONTH(DateBirth) IN (1,3,5,7,8,10,12) AND DAY(DateBirth) BETWEEN 1 AND 31)
+        OR
+        (MONTH(DateBirth) IN (4,6,9,11) AND DAY(DateBirth) BETWEEN 1 AND 30)
+        OR
+        (MONTH(DateBirth) = 2 AND DAY(DateBirth) BETWEEN 1 AND 29)
+    )
+);
+--- Add constraints to ensure valid date of birth for doctors
+ALTER TABLE Doctors
+ADD CONSTRAINT chk_doctor_datebirth
+CHECK (
+    YEAR(DateBirth) > 1920
+    AND MONTH(DateBirth) BETWEEN 1 AND 12
+    AND (
+        (MONTH(DateBirth) IN (1,3,5,7,8,10,12) AND DAY(DateBirth) BETWEEN 1 AND 31)
+        OR
+        (MONTH(DateBirth) IN (4,6,9,11) AND DAY(DateBirth) BETWEEN 1 AND 30)
+        OR
+        (MONTH(DateBirth) = 2 AND DAY(DateBirth) BETWEEN 1 AND 29)
+    )
+);
+
+
