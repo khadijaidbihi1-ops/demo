@@ -1,4 +1,4 @@
---   Table NHS Databaase
+--   Table NHS Database
 CREATE DATABASE NHS_Trust_DB;
 USE NHS_Trust_DB;
  
@@ -44,3 +44,28 @@ CREATE TABLE Clinics (
     -- constaint on email format
     CONSTRAINT `chk_clinic_email` CHECK (`Email` like '%@%.%')
 );
+
+
+-- 4. Create Doctors Table (Can now safely reference Clinics)
+CREATE TABLE Doctors (
+    DoctorID BIGINT NOT NULL AUTO_INCREMENT,
+    ClinicID BIGINT NOT NULL,
+    DoctorName VARCHAR(50) NOT NULL,
+    DoctorSurname VARCHAR(50) NOT NULL,
+    Speciality VARCHAR(50) NOT NULL,
+    Email VARCHAR(100),
+    PhoneNumber BIGINT NOT NULL,
+    DateBirth DATE NOT NULL,
+    ActiveOrNot BOOLEAN DEFAULT TRUE,
+    -- Define primary key
+    PRIMARY KEY (DoctorID),
+    -- define unique key to avoid duplication of doctors with the same name, surname, and date of birth
+    UNIQUE KEY `unique_doctor` (`DoctorName`, `DoctorSurname`, `DateBirth`),
+    -- define foreign key to reference Clinics table
+    KEY `fk_doctor_clinic` (`ClinicID`),
+    -- define foreign key constraint to ensure referential integrity with Clinics table
+    CONSTRAINT `fk_doctor_clinic` FOREIGN KEY (`ClinicID`) REFERENCES `Clinics` (`ClinicID`),
+    -- constaint on email format
+    CONSTRAINT `chk_doctor_email` CHECK (`Email` LIKE '%@%.%')
+);
+
