@@ -46,7 +46,7 @@ CREATE TABLE Clinics (
 );
 
 
--- 4. Create Doctors Table (Can now safely reference Clinics)
+-- 4. Create Doctors Table 
 CREATE TABLE Doctors (
     DoctorID BIGINT NOT NULL AUTO_INCREMENT,
     ClinicID BIGINT NOT NULL,
@@ -70,7 +70,7 @@ CREATE TABLE Doctors (
 );
 
 
--- 5. Create Appointments Table (Moved UP so Prescriptions can reference it)
+-- 5. Create Appointments Table 
 CREATE TABLE Appointments (
     AppointmentID BIGINT NOT NULL AUTO_INCREMENT,
     AppointmentDate DATE NOT NULL,
@@ -92,3 +92,4 @@ CREATE TABLE Appointments (
     CONSTRAINT chk_appointment_day CHECK (DAYOFWEEK(AppointmentDate) BETWEEN 2 AND 6),
     CONSTRAINT chk_appointment_time CHECK (HOUR(AppointmentTime) >= 8 AND HOUR(AppointmentTime) < 20)
 );
+
