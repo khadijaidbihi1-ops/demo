@@ -266,3 +266,18 @@ INSERT INTO Prescriptions (AppointmentID, MedicationID, Dosage, DateIssued, Pati
 
 
 
+---QUERY---
+--query to retrieve patients who have not received any prescriptions,
+-- along with their appointment details and attending doctor information
+SELECT 
+    p.PatientName AS 'First Name', 
+    p.PatientSurname AS 'Surname',
+    TIMESTAMPDIFF(YEAR, p.DateBirth, CURDATE()) AS 'Age',
+    a.AppointmentDate AS 'Appointment Date', 
+    CONCAT(d.DoctorName, ' ', d.DoctorSurname) AS 'Attending Doctor'
+FROM Patients p
+LEFT JOIN Appointments a ON p.PatientID = a.PatientID
+LEFT JOIN Prescriptions pr ON a.AppointmentID = pr.AppointmentID
+JOIN Doctors d ON a.DoctorID = d.DoctorID
+WHERE pr.PrescriptionID IS NULL
+ORDER BY a.AppointmentDate DESC;
