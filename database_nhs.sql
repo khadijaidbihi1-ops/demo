@@ -93,33 +93,17 @@ CREATE TABLE Appointments (
     CONSTRAINT chk_appointment_time CHECK (HOUR(AppointmentTime) >= 8 AND HOUR(AppointmentTime) < 20)
 );
 
---- Add constraints to ensure valid date of birth for patients
+-- Patients: valid birth date range
 ALTER TABLE Patients
 ADD CONSTRAINT chk_patient_datebirth
 CHECK (
-    YEAR(DateBirth) > 1920
-    AND MONTH(DateBirth) BETWEEN 1 AND 12
-    AND (
-        (MONTH(DateBirth) IN (1,3,5,7,8,10,12) AND DAY(DateBirth) BETWEEN 1 AND 31)
-        OR
-        (MONTH(DateBirth) IN (4,6,9,11) AND DAY(DateBirth) BETWEEN 1 AND 30)
-        OR
-        (MONTH(DateBirth) = 2 AND DAY(DateBirth) BETWEEN 1 AND 29)
-    )
+    DateBirth BETWEEN '1920-01-01' AND '2026-12-31'
 );
---- Add constraints to ensure valid date of birth for doctors
+-- Doctors: valid birth date range
 ALTER TABLE Doctors
 ADD CONSTRAINT chk_doctor_datebirth
 CHECK (
-    YEAR(DateBirth) > 1920
-    AND MONTH(DateBirth) BETWEEN 1 AND 12
-    AND (
-        (MONTH(DateBirth) IN (1,3,5,7,8,10,12) AND DAY(DateBirth) BETWEEN 1 AND 31)
-        OR
-        (MONTH(DateBirth) IN (4,6,9,11) AND DAY(DateBirth) BETWEEN 1 AND 30)
-        OR
-        (MONTH(DateBirth) = 2 AND DAY(DateBirth) BETWEEN 1 AND 29)
-    )
+    DateBirth BETWEEN '1920-01-01' AND '2001-12-31'
 );
 
 -- Add constraint to ensure unique doctor slots
@@ -130,4 +114,42 @@ UNIQUE (
     AppointmentDate,
     AppointmentTime
 );
+-- Add constraint to ensure unique patient slots
+ALTER TABLE Appointments
+ADD CONSTRAINT uq_patient_slot
+UNIQUE (
+    PatientID,
+    AppointmentDate,
+    AppointmentTime
+);
+
+
+--- Add foreign key constraint to ensure referential integrity with Clinics table
+--delete the existing foreign key constraint
+ALTER TABLE Doctors DROP FOREIGN KEY fk_doctor_clinic;
+---add the new foreign key constraint with ON DELETE RESTRICT and ON UPDATE CASCADE
+ALTER TABLE Doctors 
+ADD CONSTRAINT fk_doctor_clinic 
+FOREIGN KEY (ClinicID) REFERENCES Clinics(ClinicID) 
+ON DELETE RESTRICT 
+ON UPDATE CASCADE;
+
+
+
+
+--- Add unique constraint to ensure unique medication names
+ALTER TABLE Medications
+ADD CONSTRAINT uq_medication_name UNIQUE (MedicationName);
+
+-- add constraint to ensure appointments are scheduled in 15-minute intervals
+ALTER TABLE Appointments
+ADD CONSTRAINT chk_appointment_minutes 
+CHECK (MINUTE(AppointmentTime) IN (0,15,30,45));
+
+--- add constraint to ensure appointments are not scheduled during lunch break (1 PM)
+ALTER TABLE Appointments
+ADD CONSTRAINT chk_appointment_lunch 
+CHECK (HOUR(AppointmentTime) <> 13);
+
+
 
