@@ -122,4 +122,12 @@ CHECK (
     )
 );
 
+-- Add constraint to ensure unique doctor slots
+ALTER TABLE Appointments
+ADD CONSTRAINT uq_doctor_slot
+UNIQUE (
+    DoctorID,
+    AppointmentDate,
+    AppointmentTime
+);
 
