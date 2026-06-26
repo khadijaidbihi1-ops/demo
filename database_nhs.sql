@@ -69,3 +69,26 @@ CREATE TABLE Doctors (
     CONSTRAINT `chk_doctor_email` CHECK (`Email` LIKE '%@%.%')
 );
 
+
+-- 5. Create Appointments Table (Moved UP so Prescriptions can reference it)
+CREATE TABLE Appointments (
+    AppointmentID BIGINT NOT NULL AUTO_INCREMENT,
+    AppointmentDate DATE NOT NULL,
+    AppointmentTime TIME NOT NULL,
+    Notes TEXT,
+    ClinicID BIGINT NOT NULL,
+    PatientID BIGINT NOT NULL,
+    DoctorID BIGINT NOT NULL,
+    Diagnosis VARCHAR(255),
+    PhoneOrFace tinyint(1) NOT NULL DEFAULT '0',
+    Status VARCHAR(50) DEFAULT 'Scheduled',
+    -- Define primary key
+    PRIMARY KEY (AppointmentID),
+    -- Define foreign keys to reference Clinics, Patients, and Doctors tables
+    CONSTRAINT FK_Appointment_Clinic FOREIGN KEY (ClinicID) REFERENCES Clinics(ClinicID),
+    CONSTRAINT FK_Appointment_Patient FOREIGN KEY (PatientID) REFERENCES Patients(PatientID),
+    CONSTRAINT FK_Appointment_Doctor FOREIGN KEY (DoctorID) REFERENCES Doctors(DoctorID),
+    -- Constraints to ensure appointments are scheduled on weekdays and within working hours
+    CONSTRAINT chk_appointment_day CHECK (DAYOFWEEK(AppointmentDate) BETWEEN 2 AND 6),
+    CONSTRAINT chk_appointment_time CHECK (HOUR(AppointmentTime) >= 8 AND HOUR(AppointmentTime) < 20)
+);
