@@ -266,7 +266,24 @@ INSERT INTO Prescriptions (AppointmentID, MedicationID, Dosage, DateIssued, Pati
 
 
 
----QUERY---
+---QUERY 1---
+    c.ClinicName AS 'Clinic Name',
+    COUNT(d.DoctorID) AS 'Number of Doctors',
+    SUM(appointment_counts.TotalAppts) AS 'Total Clinic Appointments',
+    ROUND(AVG(appointment_counts.TotalAppts), 1) AS 'Avg Appointments per Doctor'
+FROM (
+    -- Subquery to pre-calculate appointments per doctor
+    SELECT DoctorID, COUNT(AppointmentID) AS TotalAppts
+    FROM Appointments
+    GROUP BY DoctorID
+) AS appointment_counts
+RIGHT JOIN Doctors d ON appointment_counts.DoctorID = d.DoctorID
+RIGHT JOIN Clinics c ON d.ClinicID = c.ClinicID
+GROUP BY c.ClinicName
+ORDER BY `Total Clinic Appointments` DESC;
+
+
+---QUERY 2---
 --query to retrieve patients who have not received any prescriptions,
 -- along with their appointment details and attending doctor information
 SELECT 
@@ -281,3 +298,92 @@ LEFT JOIN Prescriptions pr ON a.AppointmentID = pr.AppointmentID
 JOIN Doctors d ON a.DoctorID = d.DoctorID
 WHERE pr.PrescriptionID IS NULL
 ORDER BY a.AppointmentDate DESC;
+
+---QUERY 3---
+CREATE OR REPLACE VIEW View_PatientMedicalHistory AS
+SELECT 
+    p.PatientID, 
+    CONCAT(p.PatientName, ' ', p.PatientSurname) AS 'Patient Full Name',
+    a.AppointmentDate AS 'Visit Date',
+    a.Diagnosis AS 'Clinical Diagnosis',
+    IFNULL(m.MedicationName, 'No Medication') AS 'Medication Prescribed',
+    IFNULL(pr.Dosage, 'N/A') AS 'Prescription Dosage'
+FROM Patients p
+JOIN Appointments a ON p.PatientID = a.PatientID
+LEFT JOIN Prescriptions pr ON a.AppointmentID = pr.AppointmentID
+LEFT JOIN Medications m ON pr.MedicationID = m.MedicationID;
+
+SELECT * FROM View_PatientMedicalHistory 
+WHERE PatientID = 1 
+ORDER BY `Visit Date` DESC;
+
+
+---QUERY 4 
+WITH DoctorPerformance AS (
+    SELECT 
+        d.DoctorID,
+        CONCAT(d.DoctorName, ' ', d.DoctorSurname) AS 'Doctor Name',
+        COUNT(pr.PrescriptionID) AS 'Total Prescriptions'
+    FROM Doctors d
+    LEFT JOIN Prescriptions pr ON d.DoctorID = pr.DoctorID
+    GROUP BY d.DoctorID, d.DoctorName, d.DoctorSurname
+)
+SELECT 
+    'Doctor Performance Report' AS 'Report Type',
+    `Doctor Name`,
+    `Total Prescriptions`,
+    CASE 
+        WHEN `Total Prescriptions` > 5 THEN 'High Activity'
+        ELSE 'Standard Activity'
+    END AS 'Performance Category'
+FROM DoctorPerformance
+ORDER BY `Total Prescriptions` DESC;
+
+---QUERY 5
+SELECT 
+    m.MedicationName AS 'Medication Name', 
+    COUNT(pr.PrescriptionID) AS 'Total Prescriptions',
+    DENSE_RANK() OVER (ORDER BY COUNT(pr.PrescriptionID) DESC) AS 'Popularity Rank'
+FROM Medications m
+JOIN Prescriptions pr ON m.MedicationID = pr.MedicationID
+GROUP BY m.MedicationName
+HAVING COUNT(pr.PrescriptionID) > 1
+ORDER BY 'Popularity Rank' ASC;
+
+
+
+-- TASK D2: DATA PROTECTION TECHNIQUES
+
+-- 1. HASHING: Protecting passwords - create credentials
+CREATE TABLE IF NOT EXISTS UserCredentials (
+    UserID BIGINT PRIMARY KEY,
+    Username VARCHAR(50) NOT NULL,
+    PasswordHash CHAR(64) NOT NULL
+);
+
+-- We store the password as a hash, not plain text.
+-- We use a 'salt' (random string) to prevent password cracking.
+-- If the record already exists, we update it instead of creating a duplicate.
+INSERT INTO UserCredentials (UserID, Username, PasswordHash) 
+VALUES (1, 'doctor_user', SHA2(CONCAT('UserPassword123', 'RandomSalt_2026'), 256))
+ON DUPLICATE KEY UPDATE PasswordHash = VALUES(PasswordHash);
+
+-- 2. ENCRYPTION: Protecting sensitive medical records
+-- We change the column type to BLOB because encrypted data is binary.
+ALTER TABLE Appointments MODIFY Diagnosis BLOB;
+
+-- We save the diagnosis using AES encryption with a secret key.
+INSERT INTO Appointments (AppointmentDate, AppointmentTime, ClinicID, PatientID, DoctorID, Diagnosis, Status) 
+VALUES ('2026-07-20', '10:00:00', 1, 1, 1, AES_ENCRYPT('Chronic condition details', 'Secret_NHS_Key_2026'), 'Scheduled');
+
+-- To read the data, we must decrypt it using the same secret key.
+SELECT AppointmentID, CAST(AES_DECRYPT(Diagnosis, 'Secret_NHS_Key_2026') AS CHAR) AS DecryptedDiagnosis 
+FROM Appointments WHERE Diagnosis IS NOT NULL;
+
+
+-- 3. DATA MASKING: Protecting patient privacy
+-- We hide the full NHS number to show only the last 4 digits.
+-- This ensures staff see only what they need to see.
+SELECT PatientName, PatientSurname, 
+       CONCAT('***-***-', RIGHT(NHSnumber, 4)) AS MaskedNHS
+FROM Patients;
